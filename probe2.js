@@ -1,7 +1,24 @@
 // 一次性探测 v2：用账号密码登录后调用家庭接口（需要 TY_ACCOUNTS）
 require("dotenv").config();
 const { CloudClient, FileTokenStore } = require("cloud189-sdk");
-const accounts = require("./accounts");
+
+function loadAccounts() {
+  let raw = (process.env.TY_ACCOUNTS || "").trim();
+  if (
+    (raw.startsWith("'") && raw.endsWith("'")) ||
+    (raw.startsWith('"') && raw.endsWith('"'))
+  ) {
+    raw = raw.slice(1, -1);
+  }
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    console.log("TY_ACCOUNTS parse failed:", e.message);
+    return [];
+  }
+}
+const accounts = loadAccounts();
 
 const maskName = (s) => s.replace(/^(.{3}).*(.{4})$/, "$1****$2");
 const brief = (e) =>
