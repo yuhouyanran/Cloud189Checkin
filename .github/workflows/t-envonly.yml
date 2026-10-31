@@ -1,0 +1,9 @@
+name: T envonly
+on:
+  workflow_dispatch:
+jobs:
+  hi:
+    runs-on: ubuntu-latest
+    environment: user
+    steps:
+      - run: echo hi
