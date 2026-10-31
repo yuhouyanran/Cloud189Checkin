@@ -1,17 +1,10 @@
 name: Family sign probe
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - probe/family-sign
   workflow_dispatch:
 
 jobs:
   probe:
     runs-on: ubuntu-latest
-    environment: user
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,14 +20,6 @@ jobs:
           path: .token
           key: probe-token-${{ github.run_id }}
           restore-keys: cloud189-token-
-
-      - name: Load secrets into .env
-        uses: shine1594/secrets-to-env-action@master
-        with:
-          secrets: ${{ toJSON(secrets) }}
-          secrets_env: production
-          prefix_prod: ""
-          file_name_prod: .env
 
       - name: Install deps
         run: npm install --no-audit --no-fund

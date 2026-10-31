@@ -1,23 +1,27 @@
-// 一次性探测：家庭签到接口是否还对当前账号有效
-require("dotenv").config();
+// 一次性探测：家庭签到接口是否还对当前账号有效（仅用缓存登录态，不读密码）
+const fs = require("fs");
+const path = require("path");
 const { CloudClient, FileTokenStore } = require("cloud189-sdk");
-const accounts = require("./accounts");
 
 const maskName = (s) => s.replace(/^(.{3}).*(.{4})$/, "$1****$2");
 const brief = (e) =>
   (e && (e.response ? `${e.response.statusCode} ${e.response.body}` : e.message)) || "unknown";
 
 (async () => {
-  if (!accounts.length) {
-    console.log("NO_ACCOUNTS: TY_ACCOUNTS not set");
+  const dir = ".token";
+  const files = fs.existsSync(dir)
+    ? fs.readdirSync(dir).filter((f) => f.endsWith(".json"))
+    : [];
+  console.log("token files:", files.length);
+  if (!files.length) {
+    console.log("NO_TOKEN_CACHE");
     return;
   }
-  for (const { userName, password } of accounts) {
+  for (const f of files) {
+    const userName = path.basename(f, ".json");
     console.log(`\n=== account ${maskName(userName)}`);
     const client = new CloudClient({
-      username: userName,
-      password,
-      token: new FileTokenStore(`.token/${userName}.json`),
+      token: new FileTokenStore(path.join(dir, f)),
     });
 
     try {
@@ -34,18 +38,18 @@ const brief = (e) =>
       console.log("family list keys:", Object.keys(list || {}).join(","));
       console.log(
         "families:",
-        JSON.stringify(fams.map((f) => ({ id: f.familyId, name: f.remarkName, members: f.memberCount })))
+        JSON.stringify(fams.map((x) => ({ id: x.familyId, name: x.remarkName, members: x.memberCount })))
       );
     } catch (e) {
       console.log("familyList ERR:", brief(e));
     }
 
-    for (const f of fams) {
+    for (const fam of fams) {
       try {
-        const r = await client.familyUserSign(f.familyId);
-        console.log(`familyUserSign[${f.familyId}] OK:`, JSON.stringify(r));
+        const r = await client.familyUserSign(fam.familyId);
+        console.log(`familyUserSign[${fam.familyId}] OK:`, JSON.stringify(r));
       } catch (e) {
-        console.log(`familyUserSign[${f.familyId}] ERR:`, brief(e));
+        console.log(`familyUserSign[${fam.familyId}] ERR:`, brief(e));
       }
     }
 
